@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL)
   ? `${import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')}/api`
-  : 'http://localhost:4000/api';
+  : 'https://indo-link.onrender.com';
 
 // Create axios instance
 const api = axios.create({
@@ -55,6 +55,7 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
