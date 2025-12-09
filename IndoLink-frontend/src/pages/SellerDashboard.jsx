@@ -154,7 +154,7 @@ export default function SellerDashboard() {
           <Route index element={<ProductList />} />
           <Route path="products" element={<ProductList />} />
           <Route path="add-product" element={<AddProduct />} />
-          <Route path="edit-product" element={<EditProduct />} />
+          <Route path="edit-product/:id" element={<EditProduct />} />
           <Route path="orders" element={<SellerOrders />} />
         </Routes>
       </div>

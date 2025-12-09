@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -14,9 +14,7 @@ import ImageUpload from '../ui/ImageUpload';
 import api from '../../lib/api';
 
 export default function EditProduct() {
-  const location = useLocation();
-  // Extract product ID from URL pathname: /seller/edit-product/{id}
-  const productId = location.pathname.split('/edit-product/')[1];
+  const { id: productId } = useParams();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
