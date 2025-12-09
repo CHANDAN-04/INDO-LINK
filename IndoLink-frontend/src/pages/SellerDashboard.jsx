@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Routes, Route, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Package, Plus, BarChart3, Settings, Leaf, TrendingUp, DollarSign, Users, Eye, ShoppingCart, Star, Calendar, ArrowUp, ArrowDown, Activity, CreditCard } from 'lucide-react';
@@ -17,15 +16,8 @@ import Logo from '../components/Logo';
 
 export default function SellerDashboard() {
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState('products');
+  const navigate = useNavigate();
   const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
-
-  const getTabFromPath = (pathname) => {
-    if (pathname.includes('/add-product')) return 'add-product';
-    if (pathname.includes('/edit-product')) return 'edit-product';
-    if (pathname.includes('/orders')) return 'orders';
-    return 'products';
-  };
 
   // Fetch seller stats
   const { data: stats } = useQuery({
@@ -140,60 +132,31 @@ export default function SellerDashboard() {
             </CardContent>
           </Card>
         </div>
-        <Tabs value={getTabFromPath(location.pathname)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-4">
-            <TabsTrigger value="products" asChild>
-              <Link to="/seller" className="flex items-center space-x-2">
-                <Package className="h-4 w-4" />
-                <span>My Products</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="add-product" asChild>
-              <Link to="/seller/add-product" className="flex items-center space-x-2">
-                <Plus className="h-4 w-4" />
-                <span>Add Product</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="orders" asChild>
-              <Link to="/seller/orders" className="flex items-center space-x-2">
-                <ShoppingCart className="h-4 w-4" />
-                <span>Orders</span>
-              </Link>
-            </TabsTrigger>
-            {getTabFromPath(location.pathname) === 'edit-product' && (
-              <TabsTrigger value="edit-product" asChild>
-                <Link to={location.pathname} className="flex items-center space-x-2">
-                  <Settings className="h-4 w-4" />
-                  <span>Edit Product</span>
-                </Link>
-              </TabsTrigger>
-            )}
-          </TabsList>
 
-          {getTabFromPath(location.pathname) === 'products' && (
-            <TabsContent value="products">
-              <ProductList />
-            </TabsContent>
-          )}
-          
-          {getTabFromPath(location.pathname) === 'add-product' && (
-            <TabsContent value="add-product">
-              <AddProduct />
-            </TabsContent>
-          )}
-          
-          {getTabFromPath(location.pathname) === 'edit-product' && (
-            <TabsContent value="edit-product">
-              <EditProduct />
-            </TabsContent>
-          )}
-          
-          {getTabFromPath(location.pathname) === 'orders' && (
-            <TabsContent value="orders">
-              <SellerOrders />
-            </TabsContent>
-          )}
-        </Tabs>
+        {/* Navigation Buttons */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <Button onClick={() => navigate('/seller')} variant={location.pathname === '/seller' || location.pathname === '/seller/' ? 'default' : 'outline'} className="w-full justify-start">
+            <Package className="h-4 w-4 mr-2" />
+            My Products
+          </Button>
+          <Button onClick={() => navigate('/seller/add-product')} variant={location.pathname === '/seller/add-product' ? 'default' : 'outline'} className="w-full justify-start">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
+          </Button>
+          <Button onClick={() => navigate('/seller/orders')} variant={location.pathname === '/seller/orders' ? 'default' : 'outline'} className="w-full justify-start">
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Orders
+          </Button>
+        </div>
+
+        {/* Content Area */}
+        <Routes>
+          <Route index element={<ProductList />} />
+          <Route path="products" element={<ProductList />} />
+          <Route path="add-product" element={<AddProduct />} />
+          <Route path="edit-product" element={<EditProduct />} />
+          <Route path="orders" element={<SellerOrders />} />
+        </Routes>
       </div>
 
       {/* Razorpay Modal */}

@@ -57,14 +57,15 @@ router.post('/:id/images/', protect, requireRoles('SELLER', 'ADMIN'), upload.sin
 router.delete('/:id/images/:imageId', protect, requireRoles('SELLER', 'ADMIN'), controller.deleteProductImage);
 router.delete('/:id/images/:imageId/', protect, requireRoles('SELLER', 'ADMIN'), controller.deleteProductImage);
 
-router.get('/', controller.listProducts);
+// List and create products
 router.get('/', controller.listProducts);
 router.post('/', protect, requireRoles('SELLER', 'ADMIN'), upload.single('image'), controller.createProduct);
-router.post('/', protect, requireRoles('SELLER', 'ADMIN'), upload.single('image'), controller.createProduct);
+
+// Get, update, and delete products by ID
 router.get('/:id', controller.getProductById);
 router.get('/:id/', controller.getProductById);
-
-// Optional: delete product to match frontend attempt
+router.patch('/:id', protect, requireRoles('SELLER', 'ADMIN'), upload.single('image'), controller.updateProduct);
+router.patch('/:id/', protect, requireRoles('SELLER', 'ADMIN'), upload.single('image'), controller.updateProduct);
 router.delete('/:id', protect, requireRoles('SELLER', 'ADMIN'), async (req, res, next) => {
   try {
     const deleted = await require('../models/product.model').findByIdAndDelete(req.params.id);

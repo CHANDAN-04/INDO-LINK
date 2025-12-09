@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useLocation, Routes, Route } from 'react-router-dom';
+import { Link, useLocation, Routes, Route, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { ShoppingCart, Package, History, Search, Camera, Upload, X } from 'lucide-react';
 import ProductCatalog from '../components/buyer/ProductCatalog';
 import ProductDetails from '../components/buyer/ProductDetails';
@@ -14,15 +13,9 @@ import api from '../lib/api';
 import Logo from '../components/Logo';
 import { toast } from 'sonner';
 
-function getTabFromPath(pathname) {
-  if (pathname.includes('/cart')) return 'cart';
-  if (pathname.includes('/orders')) return 'orders';
-  if (pathname.includes('/product/')) return 'product-details';
-  return 'products';
-}
-
 export default function BuyerDashboard() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { cartItems } = useCart();
   const safeCartItems = cartItems || [];
   const [searchTerm, setSearchTerm] = useState('');
@@ -187,15 +180,6 @@ export default function BuyerDashboard() {
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
-  // Handle product details route
-  if (getTabFromPath(location.pathname) === 'product-details') {
-    return (
-      <Routes>
-        <Route path="/product/:id" element={<ProductDetails />} />
-      </Routes>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Storefront Header */}
@@ -221,12 +205,14 @@ export default function BuyerDashboard() {
                 {imageSearchMode ? <X className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
                 {imageSearchMode ? 'Cancel' : 'Image Search'}
               </Button>
-              <Link to="/buyer/cart">
-                <Button variant="outline" className="flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  Cart ({safeCartItems.length})
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/buyer/cart')}
+                className="flex items-center gap-2"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                Cart ({safeCartItems.length})
+              </Button>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -349,52 +335,48 @@ export default function BuyerDashboard() {
           </CardContent>
         </Card>
 
-        {/* Body Tabs */}
-        <Tabs value={getTabFromPath(location.pathname)} className="space-y-6 mt-8">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="products" asChild>
-              <Link to="/buyer" className="flex items-center space-x-2">
-                <Package className="h-4 w-4" />
-                <span>Products</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="cart" asChild>
-              <Link to="/buyer/cart" className="flex items-center space-x-2">
-                <ShoppingCart className="h-4 w-4" />
-                <span>Cart</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="orders" asChild>
-              <Link to="/buyer/orders" className="flex items-center space-x-2">
-                <History className="h-4 w-4" />
-                <span>Orders</span>
-              </Link>
-            </TabsTrigger>
-          </TabsList>
+        {/* Body Navigation */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-8 mb-6">
+          <Button onClick={() => navigate('/buyer')} variant={location.pathname === '/buyer' || location.pathname === '/buyer/' ? 'default' : 'outline'} className="w-full justify-start">
+            <Package className="h-4 w-4 mr-2" />
+            Products
+          </Button>
+          <Button onClick={() => navigate('/buyer/cart')} variant={location.pathname === '/buyer/cart' ? 'default' : 'outline'} className="w-full justify-start">
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Cart ({safeCartItems.length})
+          </Button>
+          <Button onClick={() => navigate('/buyer/orders')} variant={location.pathname === '/buyer/orders' ? 'default' : 'outline'} className="w-full justify-start">
+            <History className="h-4 w-4 mr-2" />
+            Orders
+          </Button>
+        </div>
 
-          {getTabFromPath(location.pathname) === 'products' && (
-            <TabsContent value="products">
-              <ProductCatalog 
-                hideFilters 
-                searchTerm={searchTerm} 
-                categoryFilter={categoryFilter}
-                imageSearchProducts={imageSearchResults?.products || null}
-              />
-            </TabsContent>
-          )}
-          
-          {getTabFromPath(location.pathname) === 'cart' && (
-            <TabsContent value="cart">
-              <Cart />
-            </TabsContent>
-          )}
-          
-          {getTabFromPath(location.pathname) === 'orders' && (
-            <TabsContent value="orders">
-              <OrderHistory />
-            </TabsContent>
-          )}
-        </Tabs>
+        {/* Content Area with Routes */}
+        <div>
+          <Routes>
+            <Route index element={<ProductCatalog 
+              hideFilters 
+              searchTerm={searchTerm} 
+              categoryFilter={categoryFilter}
+              imageSearchProducts={imageSearchResults?.products || null}
+            />} />
+            <Route path="products" element={<ProductCatalog 
+              hideFilters 
+              searchTerm={searchTerm} 
+              categoryFilter={categoryFilter}
+              imageSearchProducts={imageSearchResults?.products || null}
+            />} />
+            <Route path="product/:id" element={<ProductDetails />} />
+            <Route path="cart" element={<Cart />} />
+            <Route path="orders" element={<OrderHistory />} />
+            <Route path="*" element={
+              <div className="p-8 text-center">
+                <p className="text-muted-foreground mb-4">Page not found</p>
+                <Button onClick={() => navigate('/buyer')}>Back to Products</Button>
+              </div>
+            } />
+          </Routes>
+        </div>
       </div>
 
       {/* Camera Modal */}

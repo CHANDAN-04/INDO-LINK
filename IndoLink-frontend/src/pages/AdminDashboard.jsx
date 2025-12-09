@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Routes, Route, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { BarChart3, Package, ShoppingCart, Brain, TrendingUp, DollarSign, Users, Activity, CreditCard } from 'lucide-react';
@@ -19,19 +18,9 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import Logo from '../components/Logo';
 
-function getTabFromPath(pathname) {
-  if (pathname.includes('/my-products')) return 'my-products';
-  if (pathname.includes('/analytics')) return 'analytics';
-  if (pathname.includes('/gemini')) return 'gemini';
-  if (pathname.includes('/slider')) return 'slider';
-  if (pathname.includes('/orders')) return 'orders';
-  if (pathname.includes('/sellers')) return 'sellers';
-  if (pathname.includes('/buyers')) return 'buyers';
-  return 'seller-products';
-}
-
 export default function AdminDashboard() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
 
   // Fetch admin stats
@@ -139,107 +128,54 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Simplified dashboard: removed static sections */}
-        <Tabs value={getTabFromPath(location.pathname)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8">
-            <TabsTrigger value="seller-products" asChild>
-              <Link to="/admin" className="flex items-center space-x-2">
-                <Package className="h-4 w-4" />
-                <span>Seller Products</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="my-products" asChild>
-              <Link to="/admin/my-products" className="flex items-center space-x-2">
-                <ShoppingCart className="h-4 w-4" />
-                <span>My Products</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="sellers" asChild>
-              <Link to="/admin/sellers" className="flex items-center space-x-2">
-                <Users className="h-4 w-4" />
-                <span>Producers</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="buyers" asChild>
-              <Link to="/admin/buyers" className="flex items-center space-x-2">
-                <ShoppingCart className="h-4 w-4" />
-                <span>Buyers</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="orders" asChild>
-              <Link to="/admin/orders" className="flex items-center space-x-2">
-                <Activity className="h-4 w-4" />
-                <span>Orders</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" asChild>
-              <Link to="/admin/analytics" className="flex items-center space-x-2">
-                <TrendingUp className="h-4 w-4" />
-                <span>Analytics</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="gemini" asChild>
-              <Link to="/admin/gemini" className="flex items-center space-x-2">
-                <Brain className="h-4 w-4" />
-                <span>AI Analysis</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="slider" asChild>
-              <Link to="/admin/slider" className="flex items-center space-x-2">
-                <Activity className="h-4 w-4" />
-                <span>Slider</span>
-              </Link>
-            </TabsTrigger>
-          </TabsList>
+        {/* Navigation Buttons */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <Button onClick={() => navigate('/admin')} variant={location.pathname === '/admin' || location.pathname === '/admin/' ? 'default' : 'outline'} className="w-full justify-start">
+            <Package className="h-4 w-4 mr-2" />
+            Seller Products
+          </Button>
+          <Button onClick={() => navigate('/admin/my-products')} variant={location.pathname === '/admin/my-products' ? 'default' : 'outline'} className="w-full justify-start">
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            My Products
+          </Button>
+          <Button onClick={() => navigate('/admin/sellers')} variant={location.pathname === '/admin/sellers' ? 'default' : 'outline'} className="w-full justify-start">
+            <Users className="h-4 w-4 mr-2" />
+            Producers
+          </Button>
+          <Button onClick={() => navigate('/admin/buyers')} variant={location.pathname === '/admin/buyers' ? 'default' : 'outline'} className="w-full justify-start">
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Buyers
+          </Button>
+          <Button onClick={() => navigate('/admin/orders')} variant={location.pathname === '/admin/orders' ? 'default' : 'outline'} className="w-full justify-start">
+            <Activity className="h-4 w-4 mr-2" />
+            Orders
+          </Button>
+          <Button onClick={() => navigate('/admin/analytics')} variant={location.pathname === '/admin/analytics' ? 'default' : 'outline'} className="w-full justify-start">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Analytics
+          </Button>
+          <Button onClick={() => navigate('/admin/gemini')} variant={location.pathname === '/admin/gemini' ? 'default' : 'outline'} className="w-full justify-start">
+            <Brain className="h-4 w-4 mr-2" />
+            AI Analysis
+          </Button>
+          <Button onClick={() => navigate('/admin/slider')} variant={location.pathname === '/admin/slider' ? 'default' : 'outline'} className="w-full justify-start">
+            <Activity className="h-4 w-4 mr-2" />
+            Slider
+          </Button>
+        </div>
 
-          {getTabFromPath(location.pathname) === 'seller-products' && (
-            <TabsContent value="seller-products">
-              <SellerProducts />
-            </TabsContent>
-          )}
-          
-          {getTabFromPath(location.pathname) === 'my-products' && (
-            <TabsContent value="my-products">
-              <AdminProducts />
-            </TabsContent>
-          )}
-          
-          {getTabFromPath(location.pathname) === 'analytics' && (
-            <TabsContent value="analytics">
-              <AdminAnalytics />
-            </TabsContent>
-          )}
-          
-          {getTabFromPath(location.pathname) === 'orders' && (
-            <TabsContent value="orders">
-              <AdminOrders />
-            </TabsContent>
-          )}
-
-          {getTabFromPath(location.pathname) === 'gemini' && (
-            <TabsContent value="gemini">
-              <GeminiAnalysis />
-            </TabsContent>
-          )}
-
-          {getTabFromPath(location.pathname) === 'slider' && (
-            <TabsContent value="slider">
-              <AdminSlider />
-            </TabsContent>
-          )}
-
-          {getTabFromPath(location.pathname) === 'sellers' && (
-            <TabsContent value="sellers">
-              <AdminSellers />
-            </TabsContent>
-          )}
-
-          {getTabFromPath(location.pathname) === 'buyers' && (
-            <TabsContent value="buyers">
-              <AdminBuyers />
-            </TabsContent>
-          )}
-        </Tabs>
+        {/* Content Area */}
+        <Routes>
+          <Route index element={<SellerProducts />} />
+          <Route path="my-products" element={<AdminProducts />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="sellers" element={<AdminSellers />} />
+          <Route path="buyers" element={<AdminBuyers />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="gemini" element={<GeminiAnalysis />} />
+          <Route path="slider" element={<AdminSlider />} />
+        </Routes>
       </div>
 
       {/* Razorpay Configuration Modal */}

@@ -30,21 +30,33 @@ export default function AdminSlider() {
   });
 
   // Fetch admin products for product selection
-  const { data: adminProducts } = useQuery({
+  const { data: adminProducts = [], isError: adminProductsError } = useQuery({
     queryKey: ['admin-products'],
     queryFn: async () => {
       try {
+        console.log('Fetching admin products...');
         const response = await api.get('/admin-products');
-        return response.data?.adminProducts || [];
+        console.log('Admin products response:', response.data);
+        // API returns array directly, not wrapped in an object
+        const products = Array.isArray(response.data) ? response.data : [];
+        if (!Array.isArray(products)) {
+          console.warn('Admin products response is not an array:', products);
+          return [];
+        }
+        return products;
       } catch (error) {
         console.error('Error fetching admin products:', error);
         return [];
       }
     },
+    enabled: true,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1,
   });
 
   const createMutation = useMutation({
     mutationFn: async ({ payload, imageFile }) => {
+      console.log('Creating mutation - payload:', payload, 'imageFile:', imageFile);
       const formData = new FormData();
       Object.keys(payload).forEach(key => {
         if (payload[key] !== null && payload[key] !== undefined) {
@@ -58,20 +70,32 @@ export default function AdminSlider() {
         formData.append('imageUrl', payload.imageUrl);
       }
       
+      console.log('FormData contents:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ':', pair[1]);
+      }
+      
       const res = await api.post('/slider/admin', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      console.log('Create response:', res.data);
       return res.data;
     },
     onSuccess: () => {
+      console.log('Create mutation success');
       toast.success('Slide created');
-      queryClient.invalidateQueries(['admin-slider']);
+      queryClient.invalidateQueries({ queryKey: ['admin-slider'] });
+      queryClient.invalidateQueries({ queryKey: ['slider-items'] });
       setIsOpen(false);
       resetForm();
     },
-    onError: () => toast.error('Failed to create slide'),
+    onError: (error) => {
+      console.error('Create mutation error:', error);
+      const message = error?.response?.data?.message || error?.message || 'Failed to create slide';
+      toast.error(message);
+    },
   });
 
   const updateMutation = useMutation({
@@ -98,12 +122,16 @@ export default function AdminSlider() {
     },
     onSuccess: () => {
       toast.success('Slide updated');
-      queryClient.invalidateQueries(['admin-slider']);
+      queryClient.invalidateQueries({ queryKey: ['admin-slider'] });
+      queryClient.invalidateQueries({ queryKey: ['slider-items'] });
       setIsOpen(false);
       setEditing(null);
       resetForm();
     },
-    onError: () => toast.error('Failed to update slide'),
+    onError: (error) => {
+      const message = error?.response?.data?.message || error?.message || 'Failed to update slide';
+      toast.error(message);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -113,9 +141,13 @@ export default function AdminSlider() {
     },
     onSuccess: () => {
       toast.success('Slide deleted');
-      queryClient.invalidateQueries(['admin-slider']);
+      queryClient.invalidateQueries({ queryKey: ['admin-slider'] });
+      queryClient.invalidateQueries({ queryKey: ['slider-items'] });
     },
-    onError: () => toast.error('Failed to delete slide'),
+    onError: (error) => {
+      const message = error?.response?.data?.message || error?.message || 'Failed to delete slide';
+      toast.error(message);
+    },
   });
 
   const resetForm = () => {
@@ -128,9 +160,18 @@ export default function AdminSlider() {
   };
 
   const openNew = () => {
-    setEditing(null);
-    resetForm();
-    setIsOpen(true);
+    console.log('openNew called');
+    try {
+      console.log('Resetting form...');
+      setEditing(null);
+      resetForm();
+      console.log('Setting isOpen to true...');
+      setIsOpen(true);
+      console.log('Dialog should open now, isOpen: true');
+    } catch (err) {
+      console.error('Error in openNew:', err);
+      toast.error('Failed to open dialog');
+    }
   };
 
   const openEdit = (item) => {
@@ -184,30 +225,56 @@ export default function AdminSlider() {
   };
 
   const submit = () => {
+    console.log('Submit called - Current form:', form);
+    console.log('Image file:', imageFile);
+    console.log('Image preview:', imagePreview);
+    
     if (!form.title.trim()) {
       toast.error('Title is required');
       return;
     }
     
-    if (!imageFile && !form.imageUrl && !imagePreview) {
+    // For new items, require image
+    if (!editing && !imageFile && !form.imageUrl && !imagePreview) {
       toast.error('Please upload an image or provide an image URL');
       return;
     }
+    
+    // For editing, if no new image and no imageUrl provided, use the existing one
+    let finalImageUrl = form.imageUrl?.trim() || undefined;
+    if (editing && !imageFile && !finalImageUrl && editing.imageUrl) {
+      finalImageUrl = editing.imageUrl;
+    }
 
+    // If product is selected, don't send linkUrl (backend will generate it)
+    // Otherwise, send the provided linkUrl
+    const finalLinkUrl = form.product && form.product.trim() !== '' 
+      ? '' // Empty string when product is selected, backend will generate
+      : (form.linkUrl?.trim() || '');
+    
     const payload = { 
-      ...form, 
+      title: form.title.trim(),
+      subtitle: form.subtitle?.trim() || '',
+      linkUrl: finalLinkUrl,
+      product: form.product && form.product.trim() !== '' ? form.product : '',
       order: Number(form.order) || 0,
-      // Don't send imageUrl if we have an image file
-      imageUrl: imageFile ? undefined : form.imageUrl
+      active: form.active ? 'true' : 'false', // Convert boolean to string for FormData
+      // Don't send imageUrl if we have an image file, otherwise send the URL
+      imageUrl: imageFile ? undefined : finalImageUrl
     };
     
+    console.log('Payload to be sent:', payload);
+    console.log('Has image file:', !!imageFile);
+    
     if (editing) {
+      console.log('Updating slide with ID:', editing._id || editing.id);
       updateMutation.mutate({ 
         id: editing._id || editing.id, 
         payload,
         imageFile: imageFile || undefined
       });
     } else {
+      console.log('Creating new slide');
       createMutation.mutate({ 
         payload,
         imageFile: imageFile || undefined
@@ -223,7 +290,10 @@ export default function AdminSlider() {
             <CardTitle>Homepage Slider</CardTitle>
             <CardDescription>Manage slides shown on the buyer landing page</CardDescription>
           </div>
-          <Button onClick={openNew} className="flex items-center gap-2"><Plus className="h-4 w-4" />Add Slide</Button>
+          <Button onClick={openNew} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add Slide
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -275,7 +345,7 @@ export default function AdminSlider() {
       </Card>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col" showCloseButton={true}>
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>{editing ? 'Edit Slide' : 'Add Slide'}</DialogTitle>
             <DialogDescription>Slides appear on the buyer homepage hero.</DialogDescription>
@@ -343,19 +413,31 @@ export default function AdminSlider() {
 
             <div>
               <Label>Link to Product</Label>
-              <Select value={form.product} onValueChange={handleProductChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a product (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
-                  {adminProducts?.map((product) => (
-                    <SelectItem key={product._id} value={product._id}>
-                      {product.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {Array.isArray(adminProducts) && adminProducts.length > 0 ? (
+                <Select value={String(form.product || '')} onValueChange={handleProductChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a product (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {adminProducts.map((product) => {
+                      if (!product || !product._id || !product.name) {
+                        console.warn('Invalid product object:', product);
+                        return null;
+                      }
+                      return (
+                        <SelectItem key={product._id} value={product._id}>
+                          {product.name}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="p-2 bg-muted rounded text-sm text-muted-foreground">
+                  {adminProductsError ? 'Failed to load products' : 'No products available'}
+                </div>
+              )}
               <p className="text-xs text-muted-foreground mt-1">Selecting a product will automatically set the link URL</p>
             </div>
 

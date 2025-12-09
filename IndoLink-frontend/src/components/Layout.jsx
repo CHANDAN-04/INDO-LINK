@@ -102,7 +102,7 @@ export default function Layout({ children }) {
 
                   <Button
                     variant="ghost"
-                    className={location.pathname.includes('products') ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}
+                    className={location.pathname.includes('products') || location.pathname.includes('my-products') || (user.role === 'SELLER' && location.pathname === '/seller') || (user.role === 'BUYER' && location.pathname === '/buyer') ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}
                     asChild
                     data-testid="button-products"
                   >

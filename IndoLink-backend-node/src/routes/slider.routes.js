@@ -66,14 +66,25 @@ router.post('/admin', protect, requireRoles('ADMIN'), upload.single('image'), as
       throw createError(400, 'Title and image are required');
     }
     
+    // Convert active from string to boolean (FormData sends strings)
+    const isActive = active === 'true' || active === true || (active !== 'false' && active !== false);
+    
+    // Handle product field - convert empty string to undefined
+    const productId = product && product.trim() !== '' ? product : undefined;
+    
+    // Set linkUrl: use provided linkUrl, or generate from product, or undefined
+    const finalLinkUrl = linkUrl && linkUrl.trim() !== '' 
+      ? linkUrl 
+      : (productId ? `/buyer/product/${productId}` : undefined);
+    
     const item = await SliderItem.create({
       title,
       subtitle,
       imageUrl: finalImageUrl,
-      linkUrl: linkUrl || (product ? `/buyer/product/${product}` : undefined),
-      product: product || undefined,
+      linkUrl: finalLinkUrl,
+      product: productId,
       order: parseInt(order) || 0,
-      active: active !== false,
+      active: isActive,
     });
     
     return sendSuccess(res, item, 201);
@@ -85,19 +96,30 @@ router.put('/admin/:id', protect, requireRoles('ADMIN'), upload.single('image'),
     const { id } = req.params;
     const { title, subtitle, imageUrl, linkUrl, product, order, active } = req.body;
     
+    // Convert active from string to boolean (FormData sends strings)
+    const isActive = active === 'true' || active === true || (active !== 'false' && active !== false);
+    
+    // Handle product field - convert empty string to undefined
+    const productId = product && product.trim() !== '' ? product : undefined;
+    
+    // Set linkUrl: use provided linkUrl, or generate from product, or undefined
+    const finalLinkUrl = linkUrl && linkUrl.trim() !== '' 
+      ? linkUrl 
+      : (productId ? `/buyer/product/${productId}` : undefined);
+    
     const updateData = {
       title,
       subtitle,
-      linkUrl: linkUrl || (product ? `/buyer/product/${product}` : undefined),
-      product: product || undefined,
+      linkUrl: finalLinkUrl,
+      product: productId,
       order: parseInt(order) || 0,
-      active: active !== false,
+      active: isActive,
     };
     
     // Update image if a new one is uploaded
     if (req.file) {
       updateData.imageUrl = req.file.path;
-    } else if (imageUrl) {
+    } else if (imageUrl && imageUrl.trim() !== '') {
       updateData.imageUrl = imageUrl;
     }
     
@@ -105,7 +127,7 @@ router.put('/admin/:id', protect, requireRoles('ADMIN'), upload.single('image'),
       id,
       updateData,
       { new: true }
-    ).populate('product', 'name image');
+    ).populate('product', 'name image _id');
     
     if (!item) {
       throw createError(404, 'Slider item not found');

@@ -38,6 +38,21 @@ export default function Navbar() {
     }
   };
 
+  const getProductsLink = () => {
+    if (!user) return null;
+    
+    switch (user.role) {
+      case 'SELLER':
+        return '/seller';
+      case 'ADMIN':
+        return '/admin/my-products';
+      case 'BUYER':
+        return '/buyer';
+      default:
+        return null;
+    }
+  };
+
   const getRoleIcon = () => {
     if (!user) return null;
     
@@ -71,6 +86,12 @@ export default function Navbar() {
             </Button>
             {isAuthenticated ? (
               <>
+                <Link to={getProductsLink()}>
+                  <Button variant="ghost" className="flex items-center space-x-2">
+                    <PackageIcon className="h-4 w-4" />
+                    <span>Products</span>
+                  </Button>
+                </Link>
                 <Link to={getDashboardLink()}>
                   <Button variant="outline" className="flex items-center space-x-2">
                     {getRoleIcon()}
